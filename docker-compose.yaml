@@ -1,0 +1,55 @@
+version: "3"
+services:
+    localstack:
+        image: localstack/localstack:latest
+        container_name: localstack-local
+        environment:
+         - SERVICES=s3:5002
+         - DEFAULT_REGION=us-east-1
+         - DATA_DIR=/tmp/localstack/data
+        ports:
+         - "5002:5002"
+         - "9999:8080"
+        volumes:
+          - localstack-data:/tmp/localstack
+    postgres:
+        image: postgres:latest
+        container_name: postgres-local
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_PASSWORD=password
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+    zookeeper:
+        image: confluentinc/cp-zookeeper:latest
+        container_name: zookeeper-local
+        networks: 
+          - net
+        environment:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+    kafka:
+        image: confluentinc/cp-kafka:latest
+        container_name: kafka-local
+        networks: 
+          - net
+        depends_on:
+          - zookeeper
+        ports:
+          - 9092:9092
+        environment:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+volumes:
+  localstack-data:
+    name: localstack-data
+  postgres-data:
+    name: postgres-data
+networks: 
+  net:
+    driver: bridge
